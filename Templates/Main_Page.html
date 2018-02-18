@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Brian Ton's Link Shortener</title>
+	<link rel="shortcut icon" href="{{ url_for('static',filename='favicon.ico') }}">
+  </head>
+  <body background="DefaultBackground.png">
+  <label>Link:  </label><input type="text" id = "link_input"><button id="submitButton" type="button">Submit!</button>
+  <div id = "linkOut"></div>
+  </body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script type="text/javascript">
+  //https://stackoverflow.com/a/39318404/8935887
+  window.onkeydown = function(e) {
+      e = e || window.event;
+      switch (e.which || e.keyCode) {
+          case 13: doStuff();
+      }
+  }
+  window.onload = function() {
+    document.getElementById("submitButton").onclick = function() {
+        doStuff()
+    };
+  }
+  function doStuff() {
+    var inputText = document.getElementById("link_input").value
+    if (isValidUrl(inputText)) {
+        var jsonStuff = JSON.stringify({'text':inputText});
+        $.post("/reciever",jsonStuff,function(data, status){
+            document.getElementById("linkOut").innerHTML = "";
+            var l = document.createElement("label");
+            l.appendChild(document.createTextNode("Your New Link: "));
+            var linkElement = document.createElement("a");
+            linkElement.title=data;
+            var splitted = data.split("/");
+            console.log(splitted);
+            linkElement.href = splitted[1];
+            linkElement.id = "linkE";
+            linkElement.innerHTML = data;
+            var copyButt = document.createElement("input");
+            copyButt.type = "button";
+            copyButt.value = "Copy Link!"
+            copyButt.onclick = function() {
+                var l = document.getElementById("linkE");
+                var tempInp = document.createElement("input");
+                document.body.appendChild(tempInp);
+                tempInp.value = l.title;
+                tempInp.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInp);
+            }
+
+            var outDiv = document.getElementById("linkOut");
+
+            outDiv.appendChild(l);
+            outDiv.appendChild(linkElement);
+            outDiv.appendChild(copyButt);
+        });
+        try{
+            event.preventDefault();
+        } catch (e) {}
+    } else {
+        if (!inputText.startsWith("http")) {
+            alert("Invalid URL!!!\nURLs Must Start With http:// Or https://");
+        } else {
+            alert("Invalid URL!!!");
+        }
+    }
+  }
+  function isValidUrl(s) {
+    return s.match(/^(ht|f)tps?:\/\/[a-z0-9-\.]+\.[a-z]{2,4}\/?([^\s<>\#%"\,\{\}\\|\\\^\[\]`]+)?$/);
+   }
+</script>
+</html>

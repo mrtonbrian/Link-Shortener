@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Link Shortener Stats</title>
+  </head>
+  <body>
+    <label>Full Shortened URL:  </label><input type="text" id = "link_input"><button id="submitButton" type="button">Submit!</button>
+  </body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script>
+        window.onload = function() {
+            document.getElementById("submitButton").onclick = function() {
+                submit()
+            };
+        }
+        function submit() {
+            var inputText = document.getElementById("link_input").value;
+            if (!inputText.startsWith(location.hostname)) {
+                alert("URL Inputted Is Incorrect \n Make Sure That It Is The Fully Shortened URL");
+            } else {
+                var jsonStuff = JSON.stringify({"URL":inputText});
+                $.post('/get-count', jsonStuff,function(data,status) {
+                    console.log(data);    
+                });
+            }
+        }
+    </script>
+</html>
