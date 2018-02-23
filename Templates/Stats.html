@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <title>Link Shortener Stats</title>
   </head>
-  <body>
+  <body background="DefaultBackground.png">
     <label>Full Shortened URL:  </label><input type="text" id = "link_input"><button id="submitButton" type="button">Submit!</button>
+    <div id="tableDiv"></div>
+  <style>
+      table,th {
+        border: 1px solid black;
+      }
+      </style>
   </body>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script>
@@ -21,7 +27,32 @@
             } else {
                 var jsonStuff = JSON.stringify({"URL":inputText});
                 $.post('/get-count', jsonStuff,function(data,status) {
-                    console.log(data);    
+                    console.log(status);
+                    var d = document.getElementById("tableDiv");
+                    if (data != "NOT FOUND") {
+                        console.log(data);
+                        //Clears Div
+                        d.innerHTML = "";
+                        var x = document.createElement('TABLE');
+
+                        var count = document.createElement('p');
+                        var tn = document.createTextNode("Count: "+data['count']);
+                        count.appendChild(tn);
+                        var header = x.createTHead();
+                        var headerRow = header.insertRow(0);
+                        headerRow.insertCell(0).innerHTML = "<b>Date</b>"
+                        headerRow.insertCell(1).innerHTML = "<b>Count</b>"
+                        for (var key in data['count_per_day']) {
+                            var row = x.insertRow();
+                            row.insertCell().textContent = key;
+                            row.insertCell().textContent = data['count_per_day'][key];
+                        }
+                        //console.log(data['count_per_day'])
+                        d.appendChild(count);
+                        d.appendChild(x);
+                    } else {
+                        d.innerHTML = "<h1>URL NOT FOUND</h1>";
+                    }
                 });
             }
         }

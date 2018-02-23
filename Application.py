@@ -123,7 +123,10 @@ def get_count():
     data = request.get_json(force=True)['URL']
     data = data.split('/')[1]
     c.execute('SELECT * FROM shortened_links where rowid=?',(data,))
-    row = c.fetchall()[0]
+    try:
+        row = c.fetchall()[0]
+    except IndexError:
+        return "NOT FOUND"
     conn_dict = date_connection_dict_gen(parse_list_from_string(row[2]))
     return jsonify(count=row[0],url=row[1],count_per_day=conn_dict)
 if __name__ == '__main__':
