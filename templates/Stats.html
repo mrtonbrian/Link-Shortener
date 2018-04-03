@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="shortcut icon" href="{{ url_for('static',filename='favicon.ico') }}">
+    <meta charset="UTF-8">
+    <title>Link Shortener Stats</title>
+    <style>
+      div.hidden {
+        display: none;
+      }
+      table,th {
+        border: 1px solid black;
+      }
+      td {
+        padding:0 15px 0 15px;
+      }
+      div {
+        margin: 20px;
+      }
+      #downloadCSVDiv {
+        border: 1px solid black;
+      }
+    </style>
+</head>
+<body onkeyup="enterHandler(event)" background="{{ url_for('static', filename='DefaultBackground.png') }}">
+<label>Full Shortened URL: </label><input type="text" id="link_input">
+<button id="submitButton" type="button">Submit!</button>
+<div id="tableDiv"></div>
+<div id="downloadCSVDiv">
+    <h3>Download CSV For:</h3>
+    <form>
+        <select id="inputRange" oninput="changed()">
+            <option value="today">Today (With Hourly Timestamps)</option>
+            <option value="week">Last 7 Days (With Daily Timestamps)</option>
+            <option value="month">Last 30 Days (With Daily Timestamps)</option>
+            <option value="year">Last 365 Days (With Monthly Timestamps)</option>
+            <option value="all">All-Time (With Configurable Timestamps)</option>
+            <option value="range">Custom Range (With Configurable Timestamps; Unimplemented)</option>
+            <option value="common">Most Common Hours Per Day (Unimplemented)</option>
+        </select>
+        
+        <select id="selectableRanges">
+            <option value="day">Daily Timestamps</option>
+            <option value="month">Monthly Timestamps</option>
+            <option value="year">Yearly Timestamps</option>
+        </select>
+    </form>
+    <button id="submitCSVButton">Submit!</button>
+</div>
+<div id="pageNumStorer" class="hidden"></div>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script>
+        window.onload = function() {
+            document.getElementById("submitButton").onclick = function() {
+                submit()
+            };
+            document.getElementById("submitCSVButton").onclick = function() {
+                downloadCSV()
+            };
+            var dl = document.getElementById("downloadCSVDiv");
+            dl.style.display = "none";
+        }
+
+        function enterHandler(e) {
+            if (e.keyCode === 13) {
+                submit();
+            }
+        }
+        
+        function changed() {
+            var val = document.getElementById("inputRange").value;
+            if (val === "all" || val === "range") {
+                document.getElementById("selectableRanges").style.display="block";
+            } else {
+                document.getElementById("selectableRanges").style.display="none";
+            }
+        }
+        
+        function submit() {
+            var inputText = document.getElementById("link_input").value;
+            var dl = document.getElementById("downloadCSVDiv");
+            if (!inputText.startsWith(location.hostname) && !inputText.startsWith("http")) {
+                alert("URL Inputted Is Incorrect \n Make Sure That It Is The Fully Shortened URL");
+                console.log(location.hostname);
+            } else {
+                var jsonStuff = JSON.stringify({"URL":inputText});
+                $.post('/get-count', jsonStuff,function(data,status) {
+                    console.log(status);
+                    var d = document.getElementById("tableDiv");
+                    if (data != "NOT FOUND") {
+                        console.log(data);
+                        //Clears Div and Inserts Text
+                        d.innerHTML = "<h3>Count from Past 3 Days</h3>";
+                        var x = document.createElement('TABLE');
+
+                        var count = document.createElement('p');
+                        var tn = document.createTextNode("Count: "+data['count']);
+                        count.appendChild(tn);
+                        var header = x.createTHead();
+                        var headerRow = header.insertRow(0);
+                        headerRow.insertCell(0).innerHTML = "<b>Date</b>"
+                        headerRow.insertCell(1).innerHTML = "<b>Count</b>"
+                        for (var key in data['count_per_day']) {
+                            var row = x.insertRow();
+                            row.insertCell().textContent = key;
+                            row.insertCell().textContent = data['count_per_day'][key];
+                        }
+                        //console.log(data['count_per_day'])
+                        d.appendChild(count);
+                        d.appendChild(x);
+                        dl.style.display = "inline-block";
+                        changed()
+                        var store = document.getElementById("pageNumStorer");
+                        store.innerHTML = inputText;
+                    } else {
+                        dl.style.display = "none";
+                        d.innerHTML = "<h1>URL NOT FOUND</h1>";
+                    }
+                });
+            }
+        }
+
+        function downloadCSV() {
+            var inpRange = document.getElementById("inputRange").value;
+            var selectedRange = document.getElementById("selectableRanges").value;
+            
+            console.log(inpRange);
+            console.log(selectedRange);
+            //https://stackoverflow.com/a/38179502/8935887
+            xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                var a;
+                if (xhttp.readyState === 4 && xhttp.status === 200) {
+                    a = document.createElement("a");
+                    a.href = window.URL.createObjectURL(xhttp.response);
+                    a.download = "data.csv";
+                    a.style.display = "none";
+                    document.body.appendChild(a);
+                    a.click();
+                }
+            }
+            var jsonData;
+            if (inpRange === "range" || inpRange === "common") {
+                return;
+            }
+
+            var url_div = document.getElementById("pageNumStorer");
+            if (inpRange === "all" || inpRange === "range") {
+                jsonData = JSON.stringify({"inp":inpRange,"sel":selectedRange,"url":url_div.innerHTML});
+            } else {
+                jsonData = JSON.stringify({"inp":inpRange,"sel":"None", "url":url_div.innerHTML});
+            }
+            $.post("/get-csv", jsonData, function(data, status) {
+                  var dl_link = document.createElement("a");
+                  console.log(data);
+                  var u = data['url'];
+                  //window.open(u,"_blank");
+                  dl_link.setAttribute("href", u);
+                  dl_link.setAttribute("target","_blank");
+                  document.body.appendChild(dl_link);
+                  dl_link.click()
+                  document.body.removeChild(dl_link)
+            });
+        }
+</script>
+</html>
